@@ -4,9 +4,34 @@ const fs = require('fs');
 const https = require('https');
 const { exec } = require('child_process');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
+const dns = require('dns');
+
+// Global DNS override to bypass regional blocks causing ENOTFOUND for Deepgram
+const originalLookup = dns.lookup;
+dns.lookup = function (hostname, options, callback) {
+  const cb = typeof options === 'function' ? options : callback;
+  const opts = typeof options === 'object' ? options : {};
+  
+  if (typeof hostname === 'string' && hostname.includes('deepgram.com')) {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+    dns.resolve4(hostname, (err, addrs) => {
+      if (err || !addrs || addrs.length === 0) {
+        return originalLookup(hostname, options, callback);
+      }
+      if (opts.all) {
+        cb(null, [{ address: addrs[0], family: 4 }]);
+      } else {
+        cb(null, addrs[0], 4);
+      }
+    });
+  } else {
+    originalLookup(hostname, options, callback);
+  }
+};
 
 const settingsManager = require('./settingsManager');
-const groqService = require('./groqService');
+const grokService = require('./grokService');
+const usageService = require('./usageService');
 
 // Attempt to load services with fallbacks to avoid crashing if they don't exist yet
 let DeepgramService;
@@ -32,7 +57,7 @@ try {
   console.warn("[Main] Could not load balanceService. Using mock interface.", e.message);
   balanceService = {
     fetchDeepgramBalance: async () => null,
-    fetchGroqStatus: async () => null
+    fetchGrokStatus: async () => null
   };
 }
 
@@ -42,6 +67,7 @@ let settingsWindow = null;
 let overlayWindow = null;
 let keyboardListener = null;
 let isRecording = false;
+let recordingStartTime = null;
 
 // 7. Handle Deepgram transcripts
 deepgramService.onTranscript = async (transcript) => {
@@ -50,13 +76,13 @@ deepgramService.onTranscript = async (transcript) => {
   const settings = settingsManager.load();
   let finalText = transcript;
 
-  const useGroq = settings.GROQ_SPELLING_CORRECTION || 
-                  settings.GROQ_GRAMMAR_CORRECTION || 
-                  settings.GROQ_TRANSLITERATION || 
-                  settings.GROQ_TRANSLATION;
+  const useGrok = settings.GROK_SPELLING_CORRECTION || 
+                  settings.GROK_GRAMMAR_CORRECTION || 
+                  settings.GROK_TRANSLITERATION || 
+                  settings.GROK_TRANSLATION;
 
-  if (useGroq) {
-    finalText = await groqService.processTranscript(transcript, settings);
+  if (useGrok) {
+    finalText = await grokService.processTranscript(transcript, settings);
   }
 
   // Inject text via clipboard + PowerShell SendKeys Ctrl+V
@@ -77,7 +103,9 @@ deepgramService.onTranscript = async (transcript) => {
 };
 
 function handleKeyDown() {
+  if (isRecording) return; // Prevent multiple start triggers
   isRecording = true;
+  recordingStartTime = Date.now();
   const settings = settingsManager.load();
   
   if (typeof deepgramService.connect === 'function') {
@@ -98,7 +126,18 @@ function handleKeyDown() {
 }
 
 function handleKeyUp() {
+  if (!isRecording) return;
   isRecording = false;
+  
+  if (recordingStartTime) {
+      const durationSeconds = (Date.now() - recordingStartTime) / 1000;
+      const minutes = durationSeconds / 60;
+      const settings = settingsManager.load();
+      const rate = settings.DEEPGRAM_RATE || 0.0043;
+      const cost = minutes * rate;
+      usageService.logDeepgramUsage(minutes, cost);
+      recordingStartTime = null;
+  }
   
   if (typeof deepgramService.close === 'function') {
     deepgramService.close();
@@ -191,7 +230,7 @@ function openSettingsWindow() {
 
 // 1. Create a system tray icon
 function setupTray() {
-  const iconPath = path.join(__dirname, '..', '..', 'resources', 'tray-icon.png');
+  const iconPath = path.join(__dirname, '..', '..', 'oplo_square.png');
   let icon;
   
   if (fs.existsSync(iconPath)) {
@@ -227,6 +266,7 @@ function setupTray() {
 
 app.whenReady().then(() => {
   setupTray();
+  openSettingsWindow();
 
   const settings = settingsManager.load();
   startKeyListener(settings.HOTKEY || 'LEFT ALT'); 
@@ -260,18 +300,18 @@ ipcMain.handle('save-settings', (event, newSettings) => {
   return success;
 });
 
-// 10. Fetch Deepgram Balance
-ipcMain.handle('fetch-deepgram-balance', async (event, key) => {
-  if (typeof balanceService.fetchDeepgramBalance === 'function') {
-    return await balanceService.fetchDeepgramBalance(key);
+// 10. Fetch Usage Tracking Balances
+ipcMain.handle('get-usage', () => {
+  if (typeof balanceService.getBalances === 'function') {
+    return balanceService.getBalances();
   }
   return null;
 });
 
-// 11. Fetch Groq Status
-ipcMain.handle('fetch-groq-status', async (event, key) => {
-  if (typeof balanceService.fetchGroqStatus === 'function') {
-    return await balanceService.fetchGroqStatus(key);
+// 11. Fetch Grok Status
+ipcMain.handle('fetch-grok-status', async (event, key) => {
+  if (typeof balanceService.fetchGrokStatus === 'function') {
+    return await balanceService.fetchGrokStatus(key);
   }
   return null;
 });
@@ -310,12 +350,12 @@ ipcMain.handle('fetch-deepgram-models', async (event, key) => {
   });
 });
 
-// 13. Fetch Groq Models
-ipcMain.handle('fetch-groq-models', async (event, key) => {
+// 13. Fetch Grok Models
+ipcMain.handle('fetch-grok-models', async (event, key) => {
   return new Promise((resolve) => {
     const options = {
-      hostname: 'api.groq.com',
-      path: '/openai/v1/models',
+      hostname: 'api.x.ai',
+      path: '/v1/models',
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${key}`

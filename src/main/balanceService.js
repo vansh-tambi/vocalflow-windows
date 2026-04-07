@@ -1,48 +1,34 @@
+const usageService = require('./usageService');
+const settingsManager = require('./settingsManager');
 const https = require('https');
 
-async function fetchDeepgramBalance(key) {
-    return new Promise((resolve) => {
-        if (!key) return resolve(null);
-        
-        const options = {
-            hostname: 'api.deepgram.com',
-            path: '/v1/balances',
-            method: 'GET',
-            headers: {
-                'Authorization': `Token ${key}`
-            }
-        };
+function getBalances() {
+    const settings = settingsManager.load();
+    const deepgramBudget = settings.DEEPGRAM_BUDGET || 10;
+    const grokBudget = settings.GROK_BUDGET || 10;
 
-        const req = https.request(options, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const parsed = JSON.parse(data);
-                    // Extract balance amount dynamically
-                    if (parsed.balances && parsed.balances.length > 0) {
-                        resolve(parsed.balances[0].amount);
-                    } else {
-                        resolve(null);
-                    }
-                } catch (e) {
-                    resolve(null);
-                }
-            });
-        });
+    const grokUsed = usageService.getGrokTotalCost();
+    const deepgramUsed = usageService.getDeepgramTotalCost();
 
-        req.on('error', () => resolve(null));
-        req.end();
-    });
+    return {
+        grok: {
+            used: grokUsed,
+            remaining: grokBudget - grokUsed,
+        },
+        deepgram: {
+            used: deepgramUsed,
+            remaining: deepgramBudget - deepgramUsed,
+        }
+    };
 }
 
-async function fetchGroqStatus(key) {
-    return new Promise((resolve) => {
-        if (!key) return resolve(false);
+async function fetchGrokStatus(key) {
+    if (!key) return false;
 
+    return new Promise((resolve) => {
         const options = {
-            hostname: 'api.groq.com',
-            path: '/openai/v1/models',
+            hostname: 'api.x.ai',
+            path: '/v1/models',
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${key}`
@@ -54,7 +40,7 @@ async function fetchGroqStatus(key) {
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    resolve(true); // Token securely validated against endpoints
+                    resolve(true); 
                 } else {
                     resolve(false);
                 }
@@ -67,6 +53,6 @@ async function fetchGroqStatus(key) {
 }
 
 module.exports = {
-    fetchDeepgramBalance,
-    fetchGroqStatus
+    getBalances,
+    fetchGrokStatus
 };

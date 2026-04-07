@@ -3,10 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('vocalflow', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (s) => ipcRenderer.invoke('save-settings', s),
-  fetchDeepgramBalance: (key) => ipcRenderer.invoke('fetch-deepgram-balance', key),
-  fetchGroqStatus: (key) => ipcRenderer.invoke('fetch-groq-status', key),
+  getUsage: () => ipcRenderer.invoke('get-usage'),
+  fetchGrokStatus: (key) => ipcRenderer.invoke('fetch-grok-status', key),
   fetchDeepgramModels: (key) => ipcRenderer.invoke('fetch-deepgram-models', key),
-  fetchGroqModels: (key) => ipcRenderer.invoke('fetch-groq-models', key),
+  fetchGrokModels: (key) => ipcRenderer.invoke('fetch-grok-models', key),
   sendAudioChunk: (buffer) => ipcRenderer.send('audio-chunk', buffer),
   
   // Safely wrap IPC event listeners by stripping the IpcRendererEvent

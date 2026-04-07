@@ -255,79 +255,89 @@
                 <input type="text" id="deepgram-language" placeholder="en">
             </div>
         </div>
-        <div class="status-row">
+        <!-- Deepgram Usage Dashboard -->
+        <div class="status-row" style="flex-wrap: wrap;">
             <button class="btn btn-icon-text" id="deepgram-refresh" style="margin-top:0">↻</button>
-            <span style="color:var(--text-muted); font-size: 14px;">Balance:</span>
-            <span id="deepgram-balance-label" class="status-text text-muted">Awaiting check...</span>
+            <div style="display:flex; flex-direction:column; gap:4px; margin-left:8px;">
+                <span class="status-text text-muted" style="font-size: 13px;">Used: <span id="deepgram-used-label">$0.00</span></span>
+                <span class="status-text text-white" style="font-size: 15px;">Remaining: <span id="deepgram-remaining-label" class="text-green">---</span></span>
+            </div>
         </div>
     </div>
 
-    <!-- GROQ CONFIGURATION -->
+    <!-- GROK CONFIGURATION -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
-            <h2 style="margin:0;">Groq (Text Processing)</h2>
+            <h2 style="margin:0;">Grok (xAI Text Processing)</h2>
             <div class="checkbox-group" style="margin:0;">
-                <input type="checkbox" id="groq-enable">
-                <label for="groq-enable">Enable</label>
+                <input type="checkbox" id="grok-enable">
+                <label for="grok-enable">Enable</label>
             </div>
         </div>
         
-        <div id="groq-settings-container" style="transition: opacity 0.3s ease;">
+        <div id="grok-settings-container" style="transition: opacity 0.3s ease;">
             <div class="row">
                 <div class="input-group">
                     <label>API Key</label>
-                    <input type="password" id="groq-key" placeholder="gsk_...">
+                    <input type="password" id="grok-key" placeholder="xai-...">
                 </div>
-                <button class="btn" id="groq-save-key">Save</button>
+                <button class="btn" id="grok-save-key">Save</button>
             </div>
             <div class="row">
                 <div class="input-group">
                     <label>Model</label>
-                    <select id="groq-model">
-                        <option value="llama3-8b-8192">llama3-8b-8192</option>
+                    <select id="grok-model">
+                        <option value="grok-2">grok-2</option>
                     </select>
                 </div>
-                <button class="btn btn-icon-text" id="groq-fetch-models" style="margin-top: 28px;">Fetch Models</button>
+                <button class="btn btn-icon-text" id="grok-fetch-models" style="margin-top: 28px;">Fetch Models</button>
             </div>
 
             <!-- Processing Directives -->
             <div style="margin-bottom: 20px;">
                 <label style="margin-bottom: 12px; font-size: 15px; color:white;">Text Optimizations</label>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="groq-spelling">
-                    <label for="groq-spelling">Spelling Correction</label>
+                    <input type="checkbox" id="grok-spelling">
+                    <label for="grok-spelling">Spelling Correction</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="groq-grammar">
-                    <label for="groq-grammar">Grammar Correction</label>
+                    <input type="checkbox" id="grok-grammar">
+                    <label for="grok-grammar">Grammar Correction</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="groq-transliteration">
-                    <label for="groq-transliteration">Transliteration (e.g. Romanized Hindi to English)</label>
+                    <input type="checkbox" id="grok-transliteration">
+                    <label for="grok-transliteration">Transliteration (e.g. Romanized Hindi to English)</label>
                 </div>
 
                 <div id="transliteration-box" style="display:none; margin-left: 28px; margin-bottom: 16px; margin-top: 6px;">
                     <label>Transliteration Pair</label>
-                    <select id="groq-transliteration-pair"></select>
+                    <select id="grok-transliteration-pair"></select>
                 </div>
 
                 <div class="checkbox-group">
-                    <input type="checkbox" id="groq-translation">
-                    <label for="groq-translation">Translation</label>
+                    <input type="checkbox" id="grok-translation">
+                    <label for="grok-translation">Translation</label>
                 </div>
 
                 <div id="translation-box" style="display:none; margin-left: 28px; margin-top: 6px;">
                     <label>Target Language</label>
-                    <input type="text" id="groq-translation-target" placeholder="e.g. English">
+                    <input type="text" id="grok-translation-target" placeholder="e.g. English">
                 </div>
             </div>
 
-            <div class="status-row">
-                <button class="btn btn-icon-text" id="groq-refresh" style="margin-top:0">↻</button>
-                <span style="color:var(--text-muted); font-size: 14px;">Status:</span>
-                <span id="groq-status-label" class="status-text text-muted">Awaiting check...</span>
+            <!-- Grok Usage Dashboard -->
+            <div class="status-row" style="flex-wrap: wrap;">
+                <button class="btn btn-icon-text" id="grok-refresh" style="margin-top:0">↻</button>
+                <div style="display:flex; flex-direction:column; gap:4px; margin-left:8px;">
+                    <span class="status-text text-muted" style="font-size: 13px;">Used: <span id="grok-used-label">$0.00</span></span>
+                    <span class="status-text text-white" style="font-size: 15px;">Remaining: <span id="grok-remaining-label" class="text-green">---</span></span>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div style="text-align:center; color: var(--text-muted); font-size: 11px; margin-top:20px;">
+        *Estimated usage internally tracked for reference.
     </div>
 
     <div class="actions">

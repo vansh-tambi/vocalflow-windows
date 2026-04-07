@@ -11,57 +11,33 @@ const transliterationPairs = [
     "Telunglish → English"
 ];
 
-// Execute API Fetch for Deepgram Balance
-async function refreshDeepgramBalance() {
-    const key = document.getElementById('deepgram-key').value;
-    const label = document.getElementById('deepgram-balance-label');
-    if(!key) {
-        label.innerText = 'Key missing';
-        return;
-    }
-
-    label.innerText = 'Fetching...';
-    label.className = 'status-text text-muted';
+// Execute API Fetch for Usage Data
+async function refreshUsageData() {
+    const deepgramUsed = document.getElementById('deepgram-used-label');
+    const deepgramRem = document.getElementById('deepgram-remaining-label');
+    const grokUsed = document.getElementById('grok-used-label');
+    const grokRem = document.getElementById('grok-remaining-label');
+    
+    deepgramUsed.innerText = 'Loading...';
+    deepgramRem.innerText = 'Loading...';
+    grokUsed.innerText = 'Loading...';
+    grokRem.innerText = 'Loading...';
     
     try {
-        const balance = await window.vocalflow.fetchDeepgramBalance(key);
-        if (balance !== null && balance !== undefined) {
-            label.innerText = `$${Number(balance).toFixed(4)} USD`;
-            label.className = 'status-text text-green';
-        } else {
-            label.innerText = 'Error loading balance';
-            label.className = 'status-text text-red';
+        const balances = await window.vocalflow.getUsage();
+        if (balances) {
+            deepgramUsed.innerText = `$${Number(balances.deepgram.used).toFixed(4)}`;
+            deepgramRem.innerText = `$${Number(balances.deepgram.remaining).toFixed(4)}`;
+            
+            grokUsed.innerText = `$${Number(balances.grok.used).toFixed(4)}`;
+            grokRem.innerText = `$${Number(balances.grok.remaining).toFixed(4)}`;
         }
     } catch (e) {
-        label.innerText = 'Error loading balance';
-        label.className = 'status-text text-red';
-    }
-}
-
-// Execute API Fetch for Groq Status
-async function refreshGroqStatus() {
-    const key = document.getElementById('groq-key').value;
-    const label = document.getElementById('groq-status-label');
-    if(!key) {
-        label.innerText = 'Key missing';
-        return;
-    }
-
-    label.innerText = 'Checking...';
-    label.className = 'status-text text-muted';
-    
-    try {
-        const isValid = await window.vocalflow.fetchGroqStatus(key);
-        if (isValid) {
-            label.innerText = '✓ Key valid';
-            label.className = 'status-text text-green';
-        } else {
-            label.innerText = '✗ Invalid key';
-            label.className = 'status-text text-red';
-        }
-    } catch (e) {
-        label.innerText = '✗ Error checking API';
-        label.className = 'status-text text-red';
+        console.error("Failed to fetch usage:", e);
+        deepgramUsed.innerText = 'Error';
+        deepgramRem.innerText = 'Error';
+        grokUsed.innerText = 'Error';
+        grokRem.innerText = 'Error';
     }
 }
 
@@ -92,16 +68,16 @@ async function fetchDeepgramModelsList() {
     }
 }
 
-// Groq model fetcher
-async function fetchGroqModelsList() {
-    const key = document.getElementById('groq-key').value;
+// Grok model fetcher
+async function fetchGrokModelsList() {
+    const key = document.getElementById('grok-key').value;
     if (!key) return;
-    const select = document.getElementById('groq-model');
+    const select = document.getElementById('grok-model');
     const prevVal = select.value;
     select.innerHTML = '<option value="">Fetching...</option>';
     
     try {
-        const models = await window.vocalflow.fetchGroqModels(key);
+        const models = await window.vocalflow.fetchGrokModels(key);
         select.innerHTML = '';
         if (models && models.length > 0) {
             models.forEach(m => {
@@ -112,10 +88,10 @@ async function fetchGroqModelsList() {
             });
             select.value = prevVal || models[0];
         } else {
-            select.innerHTML = `<option value="llama3-8b-8192">llama3-8b-8192</option>`;
+            select.innerHTML = `<option value="grok-2">grok-2</option>`;
         }
     } catch (e) {
-        select.innerHTML = `<option value="${prevVal || 'llama3-8b-8192'}">${prevVal || 'llama3-8b-8192'}</option>`;
+        select.innerHTML = `<option value="${prevVal || 'grok-2'}">${prevVal || 'grok-2'}</option>`;
     }
 }
 
@@ -126,15 +102,15 @@ async function saveAllSettings() {
         DEEPGRAM_MODEL: document.getElementById('deepgram-model').value,
         DEEPGRAM_LANGUAGE: document.getElementById('deepgram-language').value,
         
-        GROQ_ENABLE: document.getElementById('groq-enable').checked,
-        GROQ_API_KEY: document.getElementById('groq-key').value,
-        GROQ_MODEL: document.getElementById('groq-model').value,
-        GROQ_SPELLING_CORRECTION: document.getElementById('groq-spelling').checked,
-        GROQ_GRAMMAR_CORRECTION: document.getElementById('groq-grammar').checked,
-        GROQ_TRANSLITERATION: document.getElementById('groq-transliteration').checked,
-        GROQ_TRANSLATION: document.getElementById('groq-translation').checked,
-        GROQ_TRANSLITERATION_PAIR: document.getElementById('groq-transliteration-pair').value,
-        GROQ_TRANSLATION_TARGET: document.getElementById('groq-translation-target').value,
+        GROK_ENABLE: document.getElementById('grok-enable').checked,
+        GROK_API_KEY: document.getElementById('grok-key').value,
+        GROK_MODEL: document.getElementById('grok-model').value,
+        GROK_SPELLING_CORRECTION: document.getElementById('grok-spelling').checked,
+        GROK_GRAMMAR_CORRECTION: document.getElementById('grok-grammar').checked,
+        GROK_TRANSLITERATION: document.getElementById('grok-transliteration').checked,
+        GROK_TRANSLATION: document.getElementById('grok-translation').checked,
+        GROK_TRANSLITERATION_PAIR: document.getElementById('grok-transliteration-pair').value,
+        GROK_TRANSLATION_TARGET: document.getElementById('grok-translation-target').value,
         
         HOTKEY: document.getElementById('hotkey').value,
     };
@@ -155,15 +131,15 @@ async function saveAllSettings() {
 function handleUIInteractivity() {
     // Conditionals for UI elements
     const updateVisibility = () => {
-        document.getElementById('transliteration-box').style.display = document.getElementById('groq-transliteration').checked ? 'block' : 'none';
-        document.getElementById('translation-box').style.display = document.getElementById('groq-translation').checked ? 'block' : 'none';
+        document.getElementById('transliteration-box').style.display = document.getElementById('grok-transliteration').checked ? 'block' : 'none';
+        document.getElementById('translation-box').style.display = document.getElementById('grok-translation').checked ? 'block' : 'none';
         
-        const isGroqEnabled = document.getElementById('groq-enable').checked;
-        document.getElementById('groq-settings-container').style.opacity = isGroqEnabled ? '1' : '0.4';
-        document.getElementById('groq-settings-container').style.pointerEvents = isGroqEnabled ? 'auto' : 'none';
+        const isGrokEnabled = document.getElementById('grok-enable').checked;
+        document.getElementById('grok-settings-container').style.opacity = isGrokEnabled ? '1' : '0.4';
+        document.getElementById('grok-settings-container').style.pointerEvents = isGrokEnabled ? 'auto' : 'none';
     };
 
-    ['groq-transliteration', 'groq-translation', 'groq-enable'].forEach(id => {
+    ['grok-transliteration', 'grok-translation', 'grok-enable'].forEach(id => {
         document.getElementById(id).addEventListener('change', updateVisibility);
     });
 
@@ -173,7 +149,7 @@ function handleUIInteractivity() {
 // Initial Boot Sequence
 window.addEventListener('DOMContentLoaded', async () => {
     // Scaffold UI dynamics
-    const pairSelect = document.getElementById('groq-transliteration-pair');
+    const pairSelect = document.getElementById('grok-transliteration-pair');
     transliterationPairs.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p; opt.innerText = p;
@@ -183,15 +159,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     const triggerUIVisibility = handleUIInteractivity();
 
     // Map Interactivity
-    document.getElementById('deepgram-refresh').addEventListener('click', refreshDeepgramBalance);
-    document.getElementById('groq-refresh').addEventListener('click', refreshGroqStatus);
+    document.getElementById('deepgram-refresh').addEventListener('click', refreshUsageData);
+    document.getElementById('grok-refresh').addEventListener('click', refreshUsageData);
     document.getElementById('deepgram-fetch-models').addEventListener('click', fetchDeepgramModelsList);
-    document.getElementById('groq-fetch-models').addEventListener('click', fetchGroqModelsList);
+    document.getElementById('grok-fetch-models').addEventListener('click', fetchGrokModelsList);
     document.getElementById('save-all-btn').addEventListener('click', saveAllSettings);
     
     // Explicit Save links
     document.getElementById('deepgram-save-key').addEventListener('click', saveAllSettings);
-    document.getElementById('groq-save-key').addEventListener('click', saveAllSettings);
+    document.getElementById('grok-save-key').addEventListener('click', saveAllSettings);
 
     document.getElementById('quit-btn').addEventListener('click', () => {
         window.close(); // Triggers app closure naturally through renderer window control
@@ -204,25 +180,24 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('deepgram-model').innerHTML = `<option value="${settings.DEEPGRAM_MODEL || 'nova-3'}">${settings.DEEPGRAM_MODEL || 'nova-3'}</option>`;
         document.getElementById('deepgram-language').value = settings.DEEPGRAM_LANGUAGE || 'en';
         
-        document.getElementById('groq-enable').checked = settings.GROQ_ENABLE || false;
-        document.getElementById('groq-key').value = settings.GROQ_API_KEY || '';
-        document.getElementById('groq-model').innerHTML = `<option value="${settings.GROQ_MODEL || 'llama3-8b-8192'}">${settings.GROQ_MODEL || 'llama3-8b-8192'}</option>`;
+        document.getElementById('grok-enable').checked = settings.GROK_ENABLE || false;
+        document.getElementById('grok-key').value = settings.GROK_API_KEY || '';
+        document.getElementById('grok-model').innerHTML = `<option value="${settings.GROK_MODEL || 'grok-2'}">${settings.GROK_MODEL || 'grok-2'}</option>`;
         
-        document.getElementById('groq-spelling').checked = settings.GROQ_SPELLING_CORRECTION || false;
-        document.getElementById('groq-grammar').checked = settings.GROQ_GRAMMAR_CORRECTION || false;
-        document.getElementById('groq-transliteration').checked = settings.GROQ_TRANSLITERATION || false;
-        document.getElementById('groq-translation').checked = settings.GROQ_TRANSLATION || false;
+        document.getElementById('grok-spelling').checked = settings.GROK_SPELLING_CORRECTION || false;
+        document.getElementById('grok-grammar').checked = settings.GROK_GRAMMAR_CORRECTION || false;
+        document.getElementById('grok-transliteration').checked = settings.GROK_TRANSLITERATION || false;
+        document.getElementById('grok-translation').checked = settings.GROK_TRANSLATION || false;
         
-        if (settings.GROQ_TRANSLITERATION_PAIR) pairSelect.value = settings.GROQ_TRANSLITERATION_PAIR;
-        document.getElementById('groq-translation-target').value = settings.GROQ_TRANSLATION_TARGET || '';
+        if (settings.GROK_TRANSLITERATION_PAIR) pairSelect.value = settings.GROK_TRANSLITERATION_PAIR;
+        document.getElementById('grok-translation-target').value = settings.GROK_TRANSLATION_TARGET || '';
         
         document.getElementById('hotkey').value = settings.HOTKEY || 'RIGHT ALT';
         triggerUIVisibility();
     }
 
-    // Auto-fetch Status Metrics IF Keys present
-    if (document.getElementById('deepgram-key').value) refreshDeepgramBalance();
-    if (document.getElementById('groq-key').value) refreshGroqStatus();
+    // Auto-fetch Usage Metrics
+    refreshUsageData();
 });
 
 // IPC Driven Media Control Hooks (From the Main Desktop Context)

@@ -1,18 +1,26 @@
 // config/config.js
 const config = {
-  DEEPGRAM_API_KEY: "YOUR_DEEPGRAM_API_KEY_HERE",
-  GROQ_API_KEY: "YOUR_GROQ_API_KEY_HERE",
+  DEEPGRAM_API_KEY: "",
+  GROK_API_KEY: "",
   DEEPGRAM_MODEL: "nova-2",
   DEEPGRAM_LANGUAGE: "en",
   DEEPGRAM_BASE_URL: "https://api.deepgram.com",
-  GROQ_MODEL: "llama3-8b-8192",
-  GROQ_BASE_URL: "https://api.groq.com/openai/v1",
+  GROK_MODEL: "grok-2",
+  GROK_BASE_URL: "https://api.x.ai/v1",
   HOTKEY: "RIGHT ALT",
-  GROQ_SPELLING_CORRECTION: false,
-  GROQ_GRAMMAR_CORRECTION: false,
-  GROQ_TRANSLITERATION: false,
-  GROQ_TRANSLITERATION_PAIR: "Hinglish → English",
-  GROQ_TRANSLATION: false,
-  GROQ_TRANSLATION_TARGET: "",
+  GROK_SPELLING_CORRECTION: false,
+  GROK_GRAMMAR_CORRECTION: false,
+  GROK_TRANSLITERATION: false,
+  GROK_TRANSLITERATION_PAIR: "Hinglish → English",
+  GROK_TRANSLATION: false,
+  GROK_TRANSLATION_TARGET: "",
+  
+  // Usage tracking budgets and pricing
+  DEEPGRAM_BUDGET: 10, // USD
+  GROK_BUDGET: 10, // USD
+  MODEL_PRICING: {
+    "grok-2": 0.002, // per 1000 tokens
+  },
+  DEEPGRAM_RATE: 0.0043, // USD per minute
 };
 module.exports = config;
